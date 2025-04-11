@@ -26,6 +26,34 @@ public enum OGGConverterError: Error {
 
 public class OGGConverter {
 
+    public static func rawBFS(src: URL) throws -> [Int] {
+        let srcFile = try AVAudioFile(
+            forReading: src,
+            commonFormat: .pcmFormatInt16,
+            interleaved: false
+        )
+        let format = srcFile.processingFormat
+        guard let buffer = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: AVAudioFrameCount(srcFile.length)
+        ) else { throw OGGConverterError.failedToCreatePCMBuffer }
+        try srcFile.read(into: buffer)
+        
+        let rawdBFS: [Int]
+        switch true {
+            case buffer.int16ChannelData?[0] != nil:
+                rawdBFS = Array(UnsafeBufferPointer(start:buffer.int16ChannelData![0], count: data.count / MemoryLayout<Int16>.size - MemoryLayout<Int16>.size)).map({ return Int($0) })
+                break
+            case buffer.int32ChannelData?[0] != nil:
+                rawdBFS = Array(UnsafeBufferPointer(start:buffer.int32ChannelData![0], count: data.count / MemoryLayout<Int32>.size - MemoryLayout<Int32>.size)).map({ return Int($0) })
+                break
+            default: return []
+        }
+        
+        return rawdBFS
+    }
+    
+    
     public static func convertOpusOGGToM4aFile(src: URL, dest: URL) throws {
         do {
             let data = try Data(contentsOf: src)
